@@ -4,7 +4,7 @@ from subprocess import call
 from threading import Thread
 import requests
 import os, errno
-
+import json
 
 
 class Catcher:
@@ -65,11 +65,15 @@ class Catcher:
     def download_episode_pics(self, download_dir, episode_num, pic_links):
         download_dir += str(episode_num)+'/'
         self.create_download_dir(download_dir)
+        pic_list = []
         print('Downloading episode '+str(episode_num))
         for i in range(len(pic_links)):
+            file_name = download_dir+pic_links[i].split('/')[-2]+'-'+pic_links[i].split('/')[-1]
             r = requests.get(pic_links[i])
-            with open(download_dir+pic_links[i].split('/')[-2]+'-'+pic_links[i].split('/')[-1]+'.jpg', 'wb') as outfile:
+            pic_list.append(file_name)
+            with open(file_name, 'wb') as outfile:
                 outfile.write(r.content)
+        self.build_json(pic_list, download_dir)
         print('Downloading episode '+str(episode_num)+' finished')
 
     def load_current_episode_num(self, download_dir):
@@ -85,19 +89,51 @@ class Catcher:
     def save_current_episode_num(self, current_episode_num, download_dir):
         count_file = open(download_dir+'current_episode.txt','w')
         count_file.write(str(current_episode_num)+'\n')
-        count_file.write('===Do not delete this txt===')
         count_file.close()
         return True
 
+    def build_json(self, pic_list, download_dir):
+        json_file =  open(download_dir+'pic_list.json', 'w')
+        json_file.write(json.dumps(pic_list))
+        json_file.close()
+
+    def build_comics_json(self, comics_list):
+        json_file =  open('F:/漫畫/漫畫/comics_list.json', 'w')
+        json_file.write(json.dumps(comics_list))
+        json_file.close()
+
+    def read_comic_list(self):
+        comics_list = []
+        try:
+            json_data=open('F:/漫畫/漫畫/comics_list.json').read()
+        except:
+            self.build_comics_json(comics_list)
+            return comics_list
+        comics_list = json.loads(json_data)
+        return comics_list
+
 test = Catcher()
+download_dir = 'F:/漫畫/漫畫/'
 url = input('Input comic url on "www.cartoonmad.com" : ')
-download_dir = input('Input target diractory for download : ')
+comic_name = input('Input comic name (this will create folder for download) : ')
+download_dir += comic_name+'/'
 test.create_download_dir(download_dir)
 test.set_browser_path('F:/projects/python_catch/phantomjs-2.1.1-windows/phantomjs-2.1.1-windows/bin/phantomjs')
-#download_dir = 'F:/漫畫/東京喰種re/'
+
+#get comics list from json
+comics_list = test.read_comic_list()
+comics_list.append(comic_name)
+comics_list.sort()
+#update comics list
+test.build_comics_json(comics_list)
+
+#get all episodes
 soup = test.parse(url)
 episodes = test.get_all_episodes(soup)
+
+#load current episode number
 current_episode_num = test.load_current_episode_num(download_dir)
+
 for i in range(current_episode_num, len(episodes), 1):
     test.save_current_episode_num(i+1, download_dir)
     pic_links = []
