@@ -117,14 +117,16 @@ download_dir = 'F:/漫畫/漫畫/'
 url = input('Input comic url on "www.cartoonmad.com" : ')
 comic_name = input('Input comic name (this will create folder for download) : ')
 download_dir += comic_name+'/'
-if comic_name not in test.read_comic_list:
-    test.create_download_dir(download_dir)
-test.set_browser_path('F:/projects/python_catch/phantomjs-2.1.1-windows/phantomjs-2.1.1-windows/bin/phantomjs')
 
 #get comics list from json
 comics_list = test.read_comic_list()
-comics_list.append(comic_name)
 comics_list.sort()
+
+if comic_name not in comics_list:
+    test.create_download_dir(download_dir)
+    comics_list.append(comic_name)
+test.set_browser_path('F:/projects/python_catch/phantomjs-2.1.1-windows/phantomjs-2.1.1-windows/bin/phantomjs')
+
 #update comics list
 test.build_comics_json(comics_list)
 
